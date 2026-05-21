@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MAIN_FACILITY_HUB_OVERRIDE</title>
+    <style>
+        :root {
+            --neon: #ffaa00;
+            --dim: #ff3333;
+            --bg: #0a0805;
+            --glow: 0 0 18px rgba(255, 170, 0, 0.45);
+            --dim-amber: #7a5500;
+            --panel-bg: rgba(20, 15, 0, 0.97);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--neon);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        /* CRT scanline overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.12) 50%),
+                        linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Ambient corner glow */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(255,170,0,0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── MAIN PANEL ── */
+        #main-display {
+            width: 85%;
+            max-width: 960px;
+            border: 2px solid var(--neon);
+            padding: 44px 50px;
+            background: var(--panel-bg);
+            box-shadow: var(--glow), inset 0 0 40px rgba(255,170,0,0.05);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Corner decorations */
+        #main-display::before,
+        #main-display::after {
+            content: "";
+            position: absolute;
+            width: 18px; height: 18px;
+            border-color: var(--neon);
+            border-style: solid;
+        }
+        #main-display::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+        #main-display::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
+
+        /* ── TOP BAR ── */
+        #top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            border-bottom: 1px solid #3a2800;
+            padding-bottom: 16px;
+        }
+        #top-bar-left { display: flex; flex-direction: column; gap: 4px; }
+        .tb-label { font-size: 0.65rem; color: var(--dim-amber); letter-spacing: 4px; }
+        .tb-title { font-size: 1.7rem; letter-spacing: 6px; font-weight: bold; line-height: 1; }
+        .tb-sub { font-size: 0.7rem; color: var(--dim-amber); letter-spacing: 3px; margin-top: 4px; }
+        #timer-header {
+            font-size: 2.8rem;
+            letter-spacing: 4px;
+            text-shadow: var(--glow);
+            font-weight: bold;
+            text-align: right;
+        }
+        #timer-label { font-size: 0.6rem; color: var(--dim-amber); letter-spacing: 4px; text-align: right; display: block; }
+
+        /* ── INIT SCREEN ── */
+        #init-screen { text-align: center; padding: 20px 0; }
+        .init-tagline { font-size: 0.8rem; color: var(--dim-amber); letter-spacing: 4px; margin-bottom: 30px; }
+        .warning-box {
+            border: 1px dashed #5a3a00;
+            padding: 14px 20px;
+            margin: 24px auto;
+            max-width: 580px;
+            font-size: 0.75rem;
+            color: #aa7700;
+            letter-spacing: 2px;
+            line-height: 1.7;
+            text-align: left;
+        }
+        .warning-box strong { color: var(--neon); }
+        #start-btn {
+            padding: 20px 55px;
+            font-family: inherit;
+            background: var(--neon);
+            border: none;
+            cursor: pointer;
+            font-size: 1.15rem;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #000;
+            margin-top: 10px;
+            box-shadow: 0 0 20px rgba(255,170,0,0.4);
+            transition: box-shadow 0.2s, transform 0.1s;
+            text-transform: uppercase;
+        }
+        #start-btn:hover { box-shadow: 0 0 35px rgba(255,170,0,0.7); transform: scale(1.02); }
+
+        /* ── INTRO / SPEECH SCREEN ── */
+        #instruction-wrap {
+            border: 1px solid #3a2800;
+            background: rgba(255,170,0,0.03);
+            padding: 0;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        #instruction-header {
+            font-size: 0.62rem;
+            color: var(--dim-amber);
+            letter-spacing: 4px;
+            padding: 8px 16px;
+            border-bottom: 1px solid #3a2800;
+            background: rgba(255,170,0,0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+        #instruction-text {
+            font-size: 0.88rem;
+            line-height: 1.85;
+            height: 210px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            color: #e8c97a;
+            letter-spacing: 1px;
+            padding: 14px 20px;
+            border-left: 3px solid var(--neon);
+            word-break: break-word;
+            scroll-behavior: smooth;
+        }
+        #instruction-text::-webkit-scrollbar { width: 4px; }
+        #instruction-text::-webkit-scrollbar-track { background: #0a0805; }
+        #instruction-text::-webkit-scrollbar-thumb { background: #3a2800; }
+        #speech-cursor {
+            display: inline-block;
+            width: 9px; height: 0.95em;
+            background: var(--neon);
+            vertical-align: text-bottom;
+            margin-left: 2px;
+            animation: blink 0.55s infinite;
+        }
+        #type-status {
+            font-size: 0.6rem;
+            color: #4a3200;
+            letter-spacing: 3px;
+            padding: 7px 16px;
+            border-top: 1px solid #2a1a00;
+            display: flex;
+            justify-content: space-between;
+        }
+        @keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        #type-active { animation: statusPulse 1.2s infinite; color: var(--dim-amber); }
+
+        /* ── INPUT AREA ── */
+        .input-container {
+            border-top: 1px solid #3a2800;
+            padding-top: 22px;
+            text-align: center;
+        }
+        .input-label { font-size: 0.7rem; color: var(--dim-amber); letter-spacing: 4px; margin-bottom: 8px; display: block; }
+        #command-line {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--neon);
+            color: var(--neon);
+            font-family: inherit;
+            font-size: 1.6rem;
+            width: 100%;
+            outline: none;
+            text-align: center;
+            padding: 10px 0;
+            letter-spacing: 4px;
+        }
+        #command-line:disabled {
+            color: #3a2200;
+            border-bottom-color: #3a2200;
+            cursor: not-allowed;
+        }
+        #command-line::placeholder { color: #4a3000; }
+
+        /* ── STATUS BAR ── */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 18px;
+            font-size: 0.75rem;
+            color: var(--dim-amber);
+            letter-spacing: 2px;
+        }
+        #lockdown-msg { text-align: right; }
+        #feedback { margin-top: 10px; height: 22px; font-size: 0.85rem; text-align: center; letter-spacing: 3px; }
+
+        /* ── LOCKOUT SCREEN ── */
+        #lockout-screen {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .lockout-title { font-size: 2rem; color: var(--dim); letter-spacing: 6px; margin-bottom: 12px; }
+        .lockout-timer-big {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--dim);
+            text-shadow: 0 0 20px rgba(255,51,51,0.5);
+            letter-spacing: 8px;
+            margin: 18px 0;
+        }
+        .lockout-sub { font-size: 0.8rem; color: #5a2200; letter-spacing: 3px; }
+
+        /* ── WIN SCREEN ── */
+        #win-screen {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .win-title { font-size: 2.6rem; color: #fff; letter-spacing: 8px; margin-bottom: 8px; }
+        .win-phrase {
+            font-size: 2.8rem;
+            letter-spacing: 10px;
+            color: var(--neon);
+            text-shadow: var(--glow);
+            border: 1px solid var(--neon);
+            padding: 18px 30px;
+            margin: 24px auto;
+            display: inline-block;
+            background: rgba(255,170,0,0.07);
+        }
+        .win-sub { font-size: 0.85rem; color: var(--dim-amber); letter-spacing: 4px; margin-top: 16px; line-height: 2; }
+        .win-divider { border: none; border-top: 1px solid #3a2800; margin: 20px 0; }
+        @keyframes pulseWin {
+            0%,100% { box-shadow: 0 0 18px rgba(255,170,0,0.4); }
+            50%      { box-shadow: 0 0 50px rgba(255,170,0,0.9); }
+        }
+        .win-phrase { animation: pulseWin 2s infinite; }
+
+        /* ── FAIL SCREEN ── */
+        #fail-screen { text-align: center; padding: 10px 0; }
+        .fail-title { font-size: 3rem; color: var(--dim); letter-spacing: 8px; text-shadow: 0 0 20px rgba(255,51,51,0.6); }
+        .fail-sub { font-size: 0.85rem; color: #5a2200; letter-spacing: 3px; margin-top: 18px; line-height: 2.2; }
+
+        /* ── UTILS ── */
+        .hidden { display: none; }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+    </style>
+</head>
+<body>
+
+<div id="main-display">
+
+    <!-- TOP BAR (always visible except win/fail) -->
+    <div id="top-bar">
+        <div id="top-bar-left">
+            <span class="tb-label">◈ PRIMARY_HUB_TERMINAL // MASTER OVERRIDE NODE</span>
+            <span class="tb-title">FACILITY HUB</span>
+            <span class="tb-sub">CENTRAL COMMAND // ALL STATIONS MONITORED</span>
+        </div>
+        <div>
+            <span id="timer-label">TIME REMAINING</span>
+            <div id="timer-header">--:--</div>
+        </div>
+    </div>
+
+    <!-- INIT SCREEN -->
+    <div id="init-screen">
+        <p class="init-tagline">◈ AWAITING FACILITY ADMINISTRATOR ACTIVATION ◈</p>
+        <div class="warning-box">
+            <strong>SECURITY NOTICE:</strong> THIS TERMINAL CONTROLS ALL FACILITY LOCKS AND CONTAINMENT SYSTEMS.<br><br>
+            MASTER PHRASE INPUT IS LOCKED FOR THE FIRST <strong>15 MINUTES</strong> OF OPERATION.<br>
+            ALL TEAMS MUST COLLECT FRAGMENTS FROM BREAKOUT STATIONS AND DETERMINE CORRECT SEQUENCE VIA THE ENGINEERING TERMINAL BEFORE INPUT IS PERMITTED.<br><br>
+            <strong>3 ATTEMPTS WILL BE GRANTED ON FIRST UNLOCK.</strong>
+        </div>
+        <button id="start-btn" onclick="startTerminal()">INITIALIZE FACILITY HUB</button>
+    </div>
+
+    <!-- TERMINAL CONTENT (speech + input) -->
+    <div id="terminal-content" class="hidden">
+        <div id="instruction-wrap">
+            <div id="instruction-header">
+                <span>&#9672; FACILITY_AI // BROADCAST TRANSMISSION</span>
+                <span id="type-active">&#9650; TRANSMITTING...</span>
+            </div>
+            <div id="instruction-text"><span id="speech-cursor"></span></div>
+            <div id="type-status">
+                <span>AUDIO_SYNC: ACTIVE</span>
+                <span id="type-progress">0%</span>
+            </div>
+        </div>
+        <div class="input-container">
+            <span class="input-label">MASTER OVERRIDE PHRASE — ENTER EXACT SEQUENCE</span>
+            <input type="text" id="command-line" placeholder="[ TERMINAL LOCKED ]" autocomplete="off" disabled>
+            <div id="feedback"></div>
+        </div>
+        <div class="status-bar">
+            <div>ATTEMPTS REMAINING: <span id="count">—</span></div>
+            <div id="lockdown-msg">INPUT STATUS: <span id="lockdown-timer" style="color:var(--dim);">LOCKED</span></div>
+        </div>
+    </div>
+
+    <!-- LOCKOUT SCREEN -->
+    <div id="lockout-screen" class="hidden">
+        <div class="lockout-title">⚠ SECURITY LOCKOUT ACTIVE ⚠</div>
+        <div class="lockout-timer-big" id="lockout-big-timer">--:--</div>
+        <div class="lockout-sub" id="lockout-sub-msg">TERMINAL WILL REACTIVATE UPON COUNTDOWN COMPLETION</div>
+        <div class="lockout-sub" style="margin-top:12px;" id="lockout-attempts-msg"></div>
+    </div>
+
+    <!-- WIN SCREEN -->
+    <div id="win-screen" class="hidden fade-in">
+        <div class="win-title">✓ ACCESS GRANTED</div>
+        <hr class="win-divider">
+        <div class="win-phrase">TEAMWORK &nbsp; INTEGRITY &nbsp; RESPECT &nbsp; HEART</div>
+        <hr class="win-divider">
+        <div class="win-sub">
+            MASTER OVERRIDE ACCEPTED // ALL CONTAINMENT LOCKS DISENGAGED<br>
+            FACILITY DOORS: OPEN // MISSION COMPLETE<br><br>
+            CONGRATULATIONS — YOU ESCAPED THE FACILITY.
+        </div>
+    </div>
+
+    <!-- FAIL SCREEN -->
+    <div id="fail-screen" class="hidden fade-in">
+        <div class="fail-title">TERMINAL LOCKED</div>
+        <div class="fail-sub">
+            ALL OVERRIDE ATTEMPTS EXHAUSTED.<br>
+            FACILITY LOCKDOWN PERMANENT.<br><br>
+            SECURITY TEAMS HAVE BEEN NOTIFIED.
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* ── CONFIG ── */
+    const CONFIG = {
+        phrase:      "TEAMWORK INTEGRITY RESPECT HEART",
+        totalTime:   40 * 60,   // 40 min
+        initialLock: 15 * 60,   // 15 min first lockout
+        phase2Lock:  15 * 60,   // 15 min second lockout
+        phase3Lock:   5 * 60,   //  5 min third lockout
+    };
+
+    /* Phase table: [lockSeconds, attempts] */
+    const PHASES = [
+        { lock: CONFIG.initialLock, attempts: 3 },
+        { lock: CONFIG.phase2Lock,  attempts: 2 },
+        { lock: CONFIG.phase3Lock,  attempts: 1 },
+    ];
+
+    let phase       = 0;         // current phase index (0-based)
+    let triesLeft   = 0;
+    let timeLeft    = CONFIG.totalTime;
+    let lockLeft    = 0;
+    let mainInterval  = null;
+    let lockInterval  = null;
+
+    /* DOM shortcuts */
+    const $  = id => document.getElementById(id);
+    const initScreen      = $('init-screen');
+    const terminalContent = $('terminal-content');
+    const lockoutScreen   = $('lockout-screen');
+    const winScreen       = $('win-screen');
+    const failScreen      = $('fail-screen');
+    const topBar          = $('top-bar');
+    const cmdLine         = $('command-line');
+    const feedback        = $('feedback');
+    const countEl         = $('count');
+    const lockdownTimer   = $('lockdown-timer');
+    const instrDisplay    = $('instruction-text');
+    const speechCursor    = $('speech-cursor');
+
+    /* ── SPEECH TEXT ── */
+    const speechText = "Attention. You have been locked within this facility. To escape, you must divide into four strike teams and infiltrate the surrounding breakout terminals. Each station contains a core fragment of the master override phrase. Before you can input the phrase here, you must first solve the Engineering Terminal — it will reveal the correct sequence your fragments must follow. Return here once all fragments are collected and the sequence is confirmed. The input terminal is currently under security lockdown. It will be accessible in fifteen minutes. You have forty minutes to complete this challenge before total facility lockdown begins. Good luck.";
+
+    /* ── START ── */
+    function startTerminal() {
+        initScreen.classList.add('hidden');
+        terminalContent.classList.remove('hidden');
+        runSpeech();
+    }
+
+    /* ── TYPEWRITER + SPEECH ── */
+    function runSpeech() {
+        const synth    = window.speechSynthesis;
+        const chars    = speechText.split('');
+        // Calibrate: ~49s for this text at rate 0.82; ms per char = 49000/648 ≈ 76ms
+        // We'll let speech onend trigger finish so they stay in lockstep;
+        // typewriter runs slightly faster so text is always ahead of or matching voice.
+        const totalMs  = 49000;
+        const msPerChar = Math.floor(totalMs / chars.length);
+        let charIdx    = 0;
+        let typeTimer  = null;
+        let speechDone = false;
+        let typeDone   = false;
+
+        instrDisplay.innerHTML = '<span id="speech-cursor"></span>';
+
+        function typeNextChar() {
+            if (charIdx >= chars.length) {
+                clearInterval(typeTimer);
+                typeDone = true;
+                if (speechDone) finishTransmission();
+                return;
+            }
+            const cur = instrDisplay.querySelector('#speech-cursor');
+            instrDisplay.insertBefore(document.createTextNode(chars[charIdx]), cur);
+            charIdx++;
+            // Auto-scroll to keep cursor visible
+            instrDisplay.scrollTop = instrDisplay.scrollHeight;
+            const pct = Math.round((charIdx / chars.length) * 100);
+            const prog = document.getElementById('type-progress');
+            if (prog) prog.innerText = pct + '%';
+        }
+        typeTimer = setInterval(typeNextChar, msPerChar);
+
+        // Speech runs in parallel — when it ends, check if typing is done too
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.rate  = 0.82;
+        utterance.pitch = 0.65;
+
+        utterance.onend = () => {
+            speechDone = true;
+            // If typewriter is also done (or very close), finish now
+            if (typeDone || charIdx >= chars.length - 5) {
+                clearInterval(typeTimer);
+                finishTransmission();
+            }
+            // Otherwise let typewriter tick out the remaining chars naturally
+        };
+
+        const trySpeak = () => {
+            const voices    = synth.getVoices();
+            const preferred = voices.find(v => /google us english/i.test(v.name))
+                           || voices.find(v => /english/i.test(v.lang) && v.name.toLowerCase().includes('male'))
+                           || voices[0];
+            if (preferred) utterance.voice = preferred;
+            synth.speak(utterance);
+        };
+
+        if (synth.getVoices().length > 0) trySpeak();
+        else synth.onvoiceschanged = trySpeak;
+    }
+
+    function finishTransmission() {
+        // Ensure full text is visible
+        instrDisplay.innerHTML = speechText + '<span id="speech-cursor" style="animation:none;opacity:1;background:transparent;border-right:2px solid var(--neon);width:2px;"></span>';
+        instrDisplay.scrollTop = instrDisplay.scrollHeight;
+        const activeEl = document.getElementById('type-active');
+        if (activeEl) { activeEl.innerText = '\u2713 TRANSMISSION COMPLETE'; activeEl.style.animation = 'none'; activeEl.style.color = '#556600'; }
+        const progEl = document.getElementById('type-progress');
+        if (progEl) progEl.innerText = '100%';
+        startMasterTimer();
+        beginLockPhase(0);
+    }
+
+    /* ── MASTER COUNTDOWN (40 min) ── */
+    function startMasterTimer() {
+        if (mainInterval) return;
+        mainInterval = setInterval(() => {
+            timeLeft--;
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            $('timer-header').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            if (timeLeft <= 0) {
+                clearInterval(mainInterval);
+                endGame(false, "TOTAL FACILITY LOCKDOWN — TIME EXPIRED");
+            }
+        }, 1000);
+    }
+
+    /* ── LOCKOUT PHASE MANAGER ── */
+    function beginLockPhase(phaseIdx) {
+        if (phaseIdx >= PHASES.length) {
+            // All phases exhausted
+            endGame(false, "ALL OVERRIDE ATTEMPTS EXHAUSTED");
+            return;
+        }
+        phase     = phaseIdx;
+        triesLeft = PHASES[phase].attempts;
+        lockLeft  = PHASES[phase].lock;
+
+        // Show lockout screen
+        terminalContent.classList.add('hidden');
+        lockoutScreen.classList.remove('hidden');
+
+        updateLockoutDisplay();
+
+        if (lockInterval) clearInterval(lockInterval);
+        lockInterval = setInterval(() => {
+            lockLeft--;
+            updateLockoutDisplay();
+            if (lockLeft <= 0) {
+                clearInterval(lockInterval);
+                openInputPhase();
+            }
+        }, 1000);
+    }
+
+    function updateLockoutDisplay() {
+        const m = Math.floor(lockLeft / 60);
+        const s = lockLeft % 60;
+        $('lockout-big-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        const nextAttempts = PHASES[phase].attempts;
+        $('lockout-attempts-msg').innerText = `UPON UNLOCK: ${nextAttempts} ATTEMPT${nextAttempts > 1 ? 'S' : ''} WILL BE GRANTED`;
+    }
+
+    /* ── OPEN INPUT ── */
+    function openInputPhase() {
+        lockoutScreen.classList.add('hidden');
+        terminalContent.classList.remove('hidden');
+
+        countEl.innerText = triesLeft;
+        cmdLine.disabled  = false;
+        cmdLine.placeholder = "[ ENTER MASTER PHRASE ]";
+        cmdLine.value = "";
+        feedback.innerText = "";
+        feedback.style.color = "";
+        lockdownTimer.innerHTML = `<span style="color:#22ff22">READY — ${triesLeft} ATTEMPT${triesLeft > 1 ? 'S' : ''} REMAINING</span>`;
+        cmdLine.focus();
+    }
+
+    /* ── CHECK PHRASE ── */
+    cmdLine.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkPhrase();
+    });
+
+    function checkPhrase() {
+        const val = cmdLine.value.trim().toUpperCase();
+
+        if (val === CONFIG.phrase) {
+            endGame(true);
+            return;
+        }
+
+        // Wrong answer
+        triesLeft--;
+        countEl.innerText = triesLeft;
+        $('main-display').classList.add('shake');
+        setTimeout(() => $('main-display').classList.remove('shake'), 400);
+        cmdLine.value = "";
+
+        if (triesLeft <= 0) {
+            // Move to next phase
+            feedback.innerText = "!! INVALID SEQUENCE — LOCKOUT INITIATED !!";
+            feedback.style.color = "var(--dim)";
+            cmdLine.disabled = true;
+            setTimeout(() => {
+                const nextPhase = phase + 1;
+                if (nextPhase >= PHASES.length) {
+                    endGame(false, "ALL OVERRIDE ATTEMPTS EXHAUSTED");
+                } else {
+                    beginLockPhase(nextPhase);
+                }
+            }, 1800);
+        } else {
+            feedback.innerText = `!! INVALID SEQUENCE — ${triesLeft} ATTEMPT${triesLeft !== 1 ? 'S' : ''} REMAINING !!`;
+            feedback.style.color = "var(--dim)";
+            lockdownTimer.innerHTML = `<span style="color:#22ff22">READY — ${triesLeft} ATTEMPT${triesLeft !== 1 ? 'S' : ''} REMAINING</span>`;
+        }
+    }
+
+    /* ── END STATES ── */
+    function endGame(win, reason) {
+        clearInterval(mainInterval);
+        clearInterval(lockInterval);
+        terminalContent.classList.add('hidden');
+        lockoutScreen.classList.add('hidden');
+        topBar.classList.add('hidden');
+
+        if (win) {
+            winScreen.classList.remove('hidden');
+            document.body.style.background = "radial-gradient(ellipse at center, #0d0800 0%, #050400 100%)";
+            $('main-display').style.boxShadow = "0 0 60px rgba(255,170,0,0.7), inset 0 0 40px rgba(255,170,0,0.1)";
+        } else {
+            failScreen.classList.remove('hidden');
+            $('fail-screen').querySelector('.fail-sub').innerHTML =
+                `ALL OVERRIDE ATTEMPTS EXHAUSTED.<br>FACILITY LOCKDOWN PERMANENT.<br><br>SECURITY TEAMS HAVE BEEN NOTIFIED.<br><br><span style="color:#3a1000; font-size:0.75rem;">${reason}</span>`;
+            document.body.style.background = "radial-gradient(ellipse at center, #0d0000 0%, #050000 100%)";
+            $('main-display').style.borderColor = "var(--dim)";
+            $('main-display').style.boxShadow = "0 0 30px rgba(255,51,51,0.4)";
+        }
+    }
+</script>
+
+<script>
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        alert("!! SECURITY ALERT: UNAUTHORIZED SYSTEM INSPECTION DETECTED !!");
+    });
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123 || 
+          (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) || 
+          (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+            alert("!! SECURITY ALERT: KEYBOARD BYPASS ATTEMPTED !!");
+            return false;
+        }
+    };
+</script>
+
+</body>
+</html>
